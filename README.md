@@ -78,8 +78,27 @@ Then access it from anywhere and add to home screen!
 
 ## Notes
 
-- All data is stored locally in your browser (localStorage)
+-- All data is stored locally in your browser (IndexedDB with localStorage fallback)
 - Data is **not synced** between devices
 - Works best when added to home screen
 - Make sure to use HTTPS for production (required for PWA features)
+ - This project now includes a service worker and IndexedDB storage so the app runs fully offline and persists data locally.
+
+## Importing transactions from Apple Shortcuts
+
+You can create a Shortcut that opens the app with query parameters to import a transaction. Use the `Open URLs` action with a URL like:
+
+```
+https://YOUR_HOST/import?amount=25.00&merchant=Starbucks&category=Food&currency=USD
+```
+
+- `amount` (required): numeric amount. Positive numbers are treated as spending and will be stored as negative values.
+- `merchant` or `name` (optional): merchant or note string.
+- `category` (optional): category name (e.g., `Food`, `Transport`). Defaults to `Other`.
+- `currency` (optional): ISO code like `USD`. Defaults to your current app currency.
+- `timestamp` (optional): ISO 8601 timestamp. Defaults to now.
+
+After the Shortcut opens the URL, the app will import the transaction, add it to local storage/IndexedDB, and show a brief notification. The URL query string is cleared after import to avoid duplicate imports on refresh.
+
+If you host locally for development, replace `YOUR_HOST` with the IP and port (e.g., `http://192.168.1.100:8000/import?...`).
 

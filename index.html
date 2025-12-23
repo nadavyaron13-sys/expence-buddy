@@ -49,10 +49,67 @@
                 font-weight: 400 !important;
             }
         </style>
-        <script defer src="https://apple-cash-whisperer.lovable.app/~flock.js" data-proxy-url="https://apple-cash-whisperer.lovable.app/~api/analytics"></script>
+        <script>
+            // Load remote analytics only when online to avoid failures while offline
+            if (navigator.onLine) {
+                const s = document.createElement('script');
+                s.defer = true;
+                s.src = 'https://apple-cash-whisperer.lovable.app/~flock.js';
+                s.setAttribute('data-proxy-url', 'https://apple-cash-whisperer.lovable.app/~api/analytics');
+                document.head.appendChild(s);
+            }
+        </script>
     </head>
     <body>
-        <div id="root"></div>
+        <div id="root">Loading…</div>
+        <script>
+            // Show JS errors on-page to help debug white-screen issues on mobile
+            function showAppError(msg) {
+                try {
+                    var root = document.getElementById('root');
+                    if (root) {
+                        root.innerHTML = `<div style="padding:20px;color:#900;background:#fee;border-radius:8px;margin:12px;font-family:sans-serif;"><strong>App error:</strong><pre style="white-space:pre-wrap;color:#600">${String(msg)}</pre></div>`;
+                    } else {
+                        alert('App error: ' + msg);
+                    }
+                } catch (e) {
+                    console.error('showAppError failed', e);
+                }
+            }
+
+            window.onerror = function(message, src, line, col, err) {
+                console.error('window.onerror', message, src, line, col, err);
+                showAppError(message + ' at ' + src + ':' + line + ':' + col);
+            };
+
+            window.addEventListener('unhandledrejection', function (e) {
+                console.error('unhandledrejection', e.reason);
+                showAppError('Unhandled promise rejection: ' + (e.reason && e.reason.message ? e.reason.message : String(e.reason)));
+            });
+            // If app still shows "Loading…" after a few seconds, show troubleshooting tips
+            setTimeout(function(){
+                try {
+                    var root = document.getElementById('root');
+                    if (!root) return;
+                    if (root.textContent && root.textContent.trim().toLowerCase() === 'loading…') {
+                        root.innerHTML = `
+                            <div style="padding:18px;border-radius:8px;background:#fff8e6;color:#3a2b00;font-family:sans-serif;margin:12px;">
+                                <strong>App did not start</strong>
+                                <div style="margin-top:8px;">Common causes and fixes:</div>
+                                <ol style="text-align:left;margin-top:8px;padding-left:18px;color:#6b5b3b;">
+                                  <li>You're opening the file directly (file://). Run a local server and open via <code>http://&lt;YOUR_IP&gt;:8000</code>.</li>
+                                  <li>Network blocked a script — ensure `app.js` and `idb.js` are reachable.</li>
+                                  <li>Open Safari on Mac → Develop → &lt;Your iPhone&gt; → page to view Console errors.</li>
+                                </ol>
+                                <div style="margin-top:8px;font-size:13px;color:#6b5b3b">To run a quick server on your Mac:</div>
+                                <pre style="background:#fff;margin-top:6px;padding:8px;border-radius:6px;color:#111">cd /Users/nadavyaron/finance-dashboard
+python3 -m http.server 8000 --bind 0.0.0.0</pre>
+                            </div>
+                        `;
+                    }
+                } catch (e) { console.error('loading-check', e); }
+            }, 3500);
+        </script>
         <a id="lovable-badge" target="_blank" href="https://lovable.dev/projects/2d555867-65bd-4a94-b43f-2dfb79352d89?utm_source=lovable-badge">
             <span style="color: #A1A1AA;">Edit with</span>
             <svg width="60" height="12" viewBox="0 0 116 22" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -133,6 +190,15 @@
                 });
             }
         </script>
+        <script src="idb.js"></script>
         <script src="app.js"></script>
+        <script>
+            // Register service worker for offline support
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                    navigator.serviceWorker.register('/sw.js').catch(()=>{});
+                });
+            }
+        </script>
     </body>
 </html>

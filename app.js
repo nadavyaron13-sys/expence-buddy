@@ -37,17 +37,114 @@ const CURRENCIES = {
   AUD: { symbol: "A$", name: "Australian Dollar" }
 };
 
+// In-memory caches populated from IndexedDB (if available)
+let transactionsCache = null;
+let budgetsCache = null;
+let notificationsCache = null;
+let currencyCache = null;
+
+// Initialize IDB-backed caches and migrate existing localStorage data when available
+async function initStorage() {
+  if (!window.IDBStore) return;
+  try {
+    await IDBStore.migrateFromLocalStorage({
+      transactions: STORAGE_KEY,
+      budgets: BUDGET_STORAGE_KEY,
+      notifications: NOTIFICATIONS_STORAGE_KEY,
+      currency: CURRENCY_STORAGE_KEY
+    });
+
+    const txs = await IDBStore.getAll('transactions');
+    if (Array.isArray(txs) && txs.length > 0) {
+      transactionsCache = txs;
+      // also keep localStorage in sync for apps that still rely on it
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(transactionsCache)); } catch (e) {}
+    }
+
+    const b = await IDBStore.get('budgets', 'budgets');
+    if (b && b.value) {
+      budgetsCache = b.value;
+      try { localStorage.setItem(BUDGET_STORAGE_KEY, JSON.stringify(budgetsCache)); } catch (e) {}
+    }
+
+    const notifs = await IDBStore.getAll('notifications');
+    if (Array.isArray(notifs) && notifs.length > 0) {
+      notificationsCache = notifs;
+      try { localStorage.setItem(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(notificationsCache)); } catch (e) {}
+    }
+
+    const c = await IDBStore.get('settings', 'currency');
+    if (c && c.value) {
+      currencyCache = c.value;
+      try { localStorage.setItem(CURRENCY_STORAGE_KEY, currencyCache); } catch (e) {}
+    }
+  } catch (e) {
+    // ignore IDB errors and fall back to localStorage
+  }
+}
+
+// Handle import via URL query params (used by Apple Shortcuts)
+function handleImportFromURL(root) {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    // require at least `amount`
+    if (!params.has('amount')) return false;
+
+    const rawAmount = parseFloat(params.get('amount'));
+    if (Number.isNaN(rawAmount)) return false;
+
+    const amount = rawAmount > 0 ? -rawAmount : rawAmount; // treat positive as spending
+    const merchant = params.get('merchant') || (params.get('name') || 'Imported');
+    const category = params.get('category') || 'Other';
+    const currency = params.get('currency') || loadCurrency();
+    const timestamp = params.get('timestamp') || new Date().toISOString();
+
+    const transaction = {
+      id: `t_${Date.now()}_${Math.random().toString(16).slice(2)}`,
+      merchant,
+      category,
+      amount,
+      currency,
+      timestamp
+    };
+
+    const list = loadTransactions() || [];
+    list.push(transaction);
+    saveTransactions(list);
+    addNotification(`Imported: ${merchant} ${formatCurrency(amount, currency)}`, 'info');
+
+    // Remove query string so refresh won't re-import
+    try {
+      history.replaceState(null, '', window.location.pathname);
+    } catch (e) {}
+
+    // Re-render app if root provided
+    if (root) renderApp(root, list);
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
 function loadCurrency() {
   try {
+    if (currencyCache !== null) return currencyCache;
     const raw = localStorage.getItem(CURRENCY_STORAGE_KEY);
-    return raw || "USD";
+    currencyCache = raw || "USD";
+    return currencyCache;
   } catch (e) {
     return "USD";
   }
 }
 
 function saveCurrency(currency) {
-  localStorage.setItem(CURRENCY_STORAGE_KEY, currency);
+  try {
+    currencyCache = currency;
+    localStorage.setItem(CURRENCY_STORAGE_KEY, currency);
+    if (window.IDBStore) {
+      IDBStore.put('settings', { id: 'currency', value: currency }).catch(()=>{});
+    }
+  } catch (e) {}
 }
 
 const CATEGORY_COLORS = {
@@ -83,46 +180,90 @@ function getCategoryDisplay(category) {
 
 function loadTransactions() {
   try {
+    if (transactionsCache !== null) return transactionsCache;
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return DEFAULT_TRANSACTIONS;
+    if (!raw) {
+      transactionsCache = DEFAULT_TRANSACTIONS.slice();
+      return transactionsCache;
+    }
     const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return DEFAULT_TRANSACTIONS;
-    return parsed;
+    if (!Array.isArray(parsed)) {
+      transactionsCache = DEFAULT_TRANSACTIONS.slice();
+      return transactionsCache;
+    }
+    transactionsCache = parsed;
+    return transactionsCache;
   } catch (e) {
-    return DEFAULT_TRANSACTIONS;
+    transactionsCache = DEFAULT_TRANSACTIONS.slice();
+    return transactionsCache;
   }
 }
 
 function saveTransactions(list) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+  try {
+    transactionsCache = list;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+    if (window.IDBStore) {
+      // Sync to IDB: clear then re-add for simplicity
+      IDBStore.clear('transactions').then(() => {
+        return Promise.all((list || []).map((t) => IDBStore.put('transactions', t)));
+      }).catch(()=>{});
+    }
+  } catch (e) {}
 }
 
 function loadBudgets() {
   try {
+    if (budgetsCache !== null) return budgetsCache;
     const raw = localStorage.getItem(BUDGET_STORAGE_KEY);
-    if (!raw) return {};
-    return JSON.parse(raw);
+    if (!raw) {
+      budgetsCache = {};
+      return budgetsCache;
+    }
+    budgetsCache = JSON.parse(raw);
+    return budgetsCache;
   } catch (e) {
-    return {};
+    budgetsCache = {};
+    return budgetsCache;
   }
 }
 
 function saveBudgets(budgets) {
-  localStorage.setItem(BUDGET_STORAGE_KEY, JSON.stringify(budgets));
+  try {
+    budgetsCache = budgets;
+    localStorage.setItem(BUDGET_STORAGE_KEY, JSON.stringify(budgets));
+    if (window.IDBStore) {
+      IDBStore.put('budgets', { id: 'budgets', value: budgets }).catch(()=>{});
+    }
+  } catch (e) {}
 }
 
 function loadNotifications() {
   try {
+    if (notificationsCache !== null) return notificationsCache;
     const raw = localStorage.getItem(NOTIFICATIONS_STORAGE_KEY);
-    if (!raw) return [];
-    return JSON.parse(raw);
+    if (!raw) {
+      notificationsCache = [];
+      return notificationsCache;
+    }
+    notificationsCache = JSON.parse(raw);
+    return notificationsCache;
   } catch (e) {
-    return [];
+    notificationsCache = [];
+    return notificationsCache;
   }
 }
 
 function saveNotifications(notifications) {
-  localStorage.setItem(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(notifications));
+  try {
+    notificationsCache = notifications;
+    localStorage.setItem(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(notifications));
+    if (window.IDBStore) {
+      IDBStore.clear('notifications').then(() => {
+        return Promise.all((notifications || []).map((n) => IDBStore.put('notifications', n)));
+      }).catch(()=>{});
+    }
+  } catch (e) {}
 }
 
 function addNotification(message, type = "info") {
@@ -849,11 +990,20 @@ function renderApp(root, transactions, skipBudgetCheck = false) {
   }
 }
 
-window.addEventListener("DOMContentLoaded", () => {
+window.addEventListener("DOMContentLoaded", async () => {
   const root = document.getElementById("root");
   if (!root) return;
+  try {
+    await initStorage();
+  } catch (e) {
+    // ignore init errors and continue with localStorage fallback
+  }
   const transactions = loadTransactions();
-  renderApp(root, transactions);
+  // If URL contains import params, handle them (useful for Apple Shortcuts)
+  const didImport = handleImportFromURL(root);
+  if (!didImport) {
+    renderApp(root, transactions);
+  }
 });
 
 

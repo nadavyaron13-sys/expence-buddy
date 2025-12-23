@@ -1,8 +1,8 @@
 {
-  "name": "Finance Dashboard",
-  "short_name": "Finance",
+  "name": "Wallet Buddy",
+  "short_name": "Wallet Buddy",
   "description": "Local-only personal finance tracking dashboard",
-  "start_url": "/",
+  "start_url": "expence-buddy",
   "display": "standalone",
   "background_color": "#f2f2f7",
   "theme_color": "#007aff",

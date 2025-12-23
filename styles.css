@@ -1,6 +1,13 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=DM+Sans:wght@400;500;600;700&display=swap');
 
 :root {
+  /* Spacing scale for consistent vertical rhythm */
+  --sp-xxs: 4px;
+  --sp-xs: 8px;
+  --sp-sm: 12px;
+  --sp-md: 16px;
+  --sp-lg: 24px;
+  --sp-xl: 32px;
   /* Light / white theme tokens */
   --background: 0 0% 100%; /* white page */
   --foreground: 220 8% 12%; /* dark text */
@@ -71,12 +78,20 @@
 
 body {
   margin: 0;
-  font-family: 'Inter', 'DM Sans', -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", sans-serif;
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", sans-serif;
   background: hsl(var(--background));
   color: hsl(var(--foreground));
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+/* Typography scale: body = text-base, headings = one size larger */
+:root {
+  --type-body: 1rem; /* text-base */
+  --type-heading: 1.125rem; /* text-lg (one size larger) */
+}
+
+html { font-size: var(--type-body); }
 
 /* Light-mode root tokens (default) */
 :root {
@@ -105,7 +120,7 @@ body {
 }
 
 .app-header { margin-bottom: 20px; padding-top: env(safe-area-inset-top, 0); }
-.app-title { color: hsl(var(--foreground)); font-weight: 700; font-size: 34px; }
+.app-title { color: hsl(var(--foreground)); font-weight: 700; font-size: var(--type-heading); }
 .app-subtitle { color: hsl(var(--muted)); }
 
 .summary-label { color: var(--muted); }
@@ -292,6 +307,82 @@ body {
 
 .card { padding: 2em; }
 
+/* Normalize card and panel padding to consistent spacing tokens */
+.card, .summary-card, .form-card, .chart-card, .budget-graph-card {
+  padding: var(--sp-md);
+}
+
+/* Ensure consistent vertical rhythm for transaction list items */
+.transaction-item {
+  padding-top: var(--sp-sm);
+  padding-bottom: var(--sp-sm);
+}
+
+/* Increase tappable target sizes for small controls on mobile */
+button, .primary-button, .back-button {
+  min-height: 44px;
+  padding-left: 12px;
+  padding-right: 12px;
+}
+
+/* Tweak back-button to preserve visual layout but enlarge hit area */
+.back-button { padding-top: 8px; padding-bottom: 8px; }
+
+/* Lovable badge: align contents and improve internal spacing without changing colors */
+#lovable-badge {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 8px 12px !important;
+  right: 12px !important;
+  bottom: 12px !important;
+}
+
+#lovable-badge svg { display: block; vertical-align: middle; height: 14px; }
+#lovable-badge span { display: inline-block; vertical-align: middle; }
+#lovable-badge button {
+  position: absolute !important;
+  top: -6px !important;
+  right: 6px !important;
+  width: 30px !important;
+  height: 30px !important;
+  line-height: 30px !important;
+  padding: 0 !important;
+  border-radius: 6px !important;
+  background: transparent !important;
+  color: inherit !important;
+}
+
+/* Troubleshooting and inline error components — use classes so spacing and alignment are consistent */
+.troubleshoot-panel {
+  padding: var(--sp-md);
+  border-radius: 8px;
+  margin: 12px;
+  background: #fff8e6; /* keep existing color */
+  color: #3a2b00;
+  font-family: sans-serif;
+  text-align: left;
+}
+.troubleshoot-panel ol { margin-top: 8px; padding-left: 20px; }
+.troubleshoot-panel pre { background: #fff; margin-top: 6px; padding: 8px; border-radius: 6px; color: #111; overflow:auto; }
+
+.app-error {
+  padding: var(--sp-md);
+  color: #600;
+  background: #fee;
+  border-radius: 8px;
+  margin: 12px;
+  font-family: sans-serif;
+  text-align: left;
+  box-shadow: 0 6px 18px rgba(16,24,40,0.04);
+  border: 1px solid rgba(153,0,0,0.08);
+  z-index: 9999;
+}
+
+/* Ensure chips and metadata maintain spacing relation to body text */
+.transaction-category-chip { margin-top: 6px; }
+
+
 .read-the-docs { color: hsl(var(--muted)); }
 
 #root {
@@ -339,10 +430,10 @@ body {
 }
 
 .app-title {
-  font-size: 34px;
+  font-size: var(--type-heading);
   font-weight: 700;
-  letter-spacing: 0.37px;
-  line-height: 1.2;
+  letter-spacing: 0.2px;
+  line-height: 1.25;
 }
 
 .app-subtitle {

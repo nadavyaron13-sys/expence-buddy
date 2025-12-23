@@ -1,0 +1,19 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Base: neutral, no animations/transitions per project rules */
+@layer base {
+  html, body {
+    @apply bg-white text-gray-800 antialiased;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  /* Utility to opt-in to strictly no animations for any subtree */
+  .no-animations *,
+  .no-animations *::before,
+  .no-animations *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}

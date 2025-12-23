@@ -27,6 +27,8 @@
         <meta name="twitter:image" content="https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/82429366-fab9-4975-a900-7302af429453/id-preview-98044560--2d555867-65bd-4a94-b43f-2dfb79352d89.lovable.app-1766505504609.png"/>
         <!-- Keep original Lovable styles, but replace the JS bundle with our own readable app.js -->
         <link rel="stylesheet" crossorigin href="assets/index-S7NrsCGM.css">
+        <!-- Tailwind output (built to styles.tailwind.css) -->
+        <link rel="stylesheet" href="styles.tailwind.css">
         <link rel="stylesheet" href="styles.css">
         <style>
             #lovable-badge {
@@ -68,7 +70,7 @@
                 try {
                     var root = document.getElementById('root');
                     if (root) {
-                        root.innerHTML = `<div style="padding:20px;color:#900;background:#fee;border-radius:8px;margin:12px;font-family:sans-serif;"><strong>App error:</strong><pre style="white-space:pre-wrap;color:#600">${String(msg)}</pre></div>`;
+                        root.innerHTML = `<div class="app-error"><strong>App error:</strong><pre style="white-space:pre-wrap;">${String(msg)}</pre></div>`;
                     } else {
                         alert('App error: ' + msg);
                     }
@@ -92,20 +94,20 @@
                     var root = document.getElementById('root');
                     if (!root) return;
                     if (root.textContent && root.textContent.trim().toLowerCase() === 'loading…') {
-                        root.innerHTML = `
-                            <div style="padding:18px;border-radius:8px;background:#fff8e6;color:#3a2b00;font-family:sans-serif;margin:12px;">
-                                <strong>App did not start</strong>
-                                <div style="margin-top:8px;">Common causes and fixes:</div>
-                                <ol style="text-align:left;margin-top:8px;padding-left:18px;color:#6b5b3b;">
-                                  <li>You're opening the file directly (file://). Run a local server and open via <code>http://&lt;YOUR_IP&gt;:8000</code>.</li>
-                                  <li>Network blocked a script — ensure `app.js` and `idb.js` are reachable.</li>
-                                  <li>Open Safari on Mac → Develop → &lt;Your iPhone&gt; → page to view Console errors.</li>
-                                </ol>
-                                <div style="margin-top:8px;font-size:13px;color:#6b5b3b">To run a quick server on your Mac:</div>
-                                <pre style="background:#fff;margin-top:6px;padding:8px;border-radius:6px;color:#111">cd /Users/nadavyaron/finance-dashboard
+                                                root.innerHTML = `
+                                                        <div class="troubleshoot-panel">
+                                                                <strong>App did not start</strong>
+                                                                <div style="margin-top:8px;">Common causes and fixes:</div>
+                                                                <ol>
+                                                                    <li>You're opening the file directly (file://). Run a local server and open via <code>http://&lt;YOUR_IP&gt;:8000</code>.</li>
+                                                                    <li>Network blocked a script — ensure `app.js` and `idb.js` are reachable.</li>
+                                                                    <li>Open Safari on Mac → Develop → &lt;Your iPhone&gt; → page to view Console errors.</li>
+                                                                </ol>
+                                                                <div style="margin-top:8px;font-size:13px">To run a quick server on your Mac:</div>
+                                                                <pre>cd /Users/nadavyaron/finance-dashboard
 python3 -m http.server 8000 --bind 0.0.0.0</pre>
-                            </div>
-                        `;
+                                                        </div>
+                                                `;
                     }
                 } catch (e) { console.error('loading-check', e); }
             }, 3500);

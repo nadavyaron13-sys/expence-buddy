@@ -1,0 +1,203 @@
+{
+  "meta": {
+    "name": "ExpenseFlow Dark Finance Dashboard",
+    "category": "Personal Finance / Analytics Dashboard",
+    "platform": "Mobile-first / Responsive Web",
+    "designIntent": "Modern, data-dense, calm, premium dark UI optimized for financial clarity",
+    "tone": ["Professional", "Minimal", "Trustworthy", "Data-driven"]
+  },
+
+  "designPhilosophy": {
+    "corePrinciples": [
+      "Dark-first UI to reduce eye strain",
+      "High contrast for numeric data",
+      "Color used primarily for categorization, not decoration",
+      "Cards as primary organizational units",
+      "Progressive disclosure of information"
+    ],
+    "visualHierarchy": [
+      "Large numeric totals",
+      "Section headers",
+      "Charts and progress bars",
+      "Secondary metadata and labels"
+    ]
+  },
+
+  "layout": {
+    "grid": {
+      "type": "Single-column vertical stack",
+      "padding": "16–20px horizontal",
+      "sectionSpacing": "20–24px",
+      "cardSpacing": "16px"
+    },
+    "scrollBehavior": {
+      "primaryScroll": "Vertical",
+      "nestedScrolls": "Allowed for transaction lists"
+    }
+  },
+
+  "colorSystem": {
+    "mode": "Dark",
+    "backgrounds": {
+      "appBackground": "#0B1220",
+      "cardBackground": "#121A2A",
+      "cardHover": "#18223A",
+      "divider": "rgba(255,255,255,0.06)"
+    },
+    "text": {
+      "primary": "#FFFFFF",
+      "secondary": "rgba(255,255,255,0.72)",
+      "tertiary": "rgba(255,255,255,0.48)",
+      "negative": "#FF6B6B",
+      "positive": "#4ADE80"
+    },
+    "accentPalette": {
+      "shopping": "#A855F7",
+      "travel": "#38BDF8",
+      "foodDining": "#F59E0B",
+      "billsUtilities": "#22C55E",
+      "healthFitness": "#F97316",
+      "transportation": "#60A5FA",
+      "entertainment": "#EC4899"
+    },
+    "chartUsageRules": {
+      "donutCharts": "Use accentPalette colors only",
+      "progressBars": "Filled with category color, muted background track",
+      "noGradients": true
+    }
+  },
+
+  "typography": {
+    "fontFamily": "Inter, SF Pro, system-ui",
+    "scale": {
+      "display": {
+        "size": "28–32px",
+        "weight": 600,
+        "usage": "Total expenses, key KPIs"
+      },
+      "sectionTitle": {
+        "size": "16–18px",
+        "weight": 600
+      },
+      "body": {
+        "size": "14px",
+        "weight": 400
+      },
+      "caption": {
+        "size": "12px",
+        "weight": 400
+      }
+    },
+    "numericFormatting": {
+      "monospaced": false,
+      "currencyProminence": "Amount > currency symbol",
+      "decimals": "Always shown"
+    }
+  },
+
+  "components": {
+    "appHeader": {
+      "elements": ["App name", "Currency selector", "Notification icon"],
+      "style": "Minimal, icon-forward, no borders"
+    },
+
+    "primaryMetricCard": {
+      "content": ["Title", "Large numeric value", "Subtext metadata"],
+      "emphasis": "Number-first",
+      "cornerRadius": "16px"
+    },
+
+    "card": {
+      "background": "cardBackground",
+      "radius": "16px",
+      "padding": "16px",
+      "shadow": "None (depth implied via contrast)"
+    },
+
+    "donutChart": {
+      "innerLabel": "Total value",
+      "strokeWidth": "Medium",
+      "legend": {
+        "position": "Right or below",
+        "icon": "Small category icon",
+        "valueAligned": "Right"
+      }
+    },
+
+    "progressList": {
+      "rowStructure": [
+        "Icon",
+        "Category name",
+        "Progress bar",
+        "Amount + remaining text"
+      ],
+      "barHeight": "6–8px",
+      "barRadius": "Full"
+    },
+
+    "listItem": {
+      "icon": "Colored circular background",
+      "primaryText": "Merchant / Category",
+      "secondaryText": "Category label",
+      "amount": "Right aligned, color-coded"
+    }
+  },
+
+  "dataVisualization": {
+    "charts": ["Donut", "Progress Bars"],
+    "rules": [
+      "Always show numeric totals near charts",
+      "Avoid axis labels where possible",
+      "Prefer relative comparisons over raw tables"
+    ]
+  },
+
+  "iconography": {
+    "style": "Outlined or duotone",
+    "background": "Soft tinted circle",
+    "size": "20–24px",
+    "semanticColoring": true
+  },
+
+  "interactionPatterns": {
+    "tapTargets": "Minimum 44px height",
+    "feedback": "Subtle background highlight",
+    "animations": {
+      "duration": "150–200ms",
+      "easing": "ease-out",
+      "usage": ["Progress bar fill", "Card hover"]
+    }
+  },
+
+  "contentPatterns": {
+    "numbers": {
+      "alwaysFormatted": true,
+      "currency": "Leading symbol",
+      "negativeValues": "Red with minus sign"
+    },
+    "labels": {
+      "short": true,
+      "sentenceCase": true
+    }
+  },
+
+  "AIReplicationGuidelines": {
+    "do": [
+      "Use cards for all grouped information",
+      "Prioritize numeric clarity over decoration",
+      "Reuse category colors consistently",
+      "Keep spacing generous"
+    ],
+    "avoid": [
+      "Bright backgrounds",
+      "Excessive gradients",
+      "Overuse of borders",
+      "Multiple font families"
+    ],
+    "defaultAssumptions": {
+      "darkMode": true,
+      "financeContext": true,
+      "mobileFirst": true
+    }
+  }
+}

@@ -30,7 +30,7 @@
         <link rel="stylesheet" href="styles.css">
         <!-- Lovable analytics and badge removed -->
     </head>
-    <body>
+    <body class="dark">
         <div id="root">Loading…</div>
         <script>
             // Show JS errors on-page to help debug white-screen issues on mobile
@@ -68,7 +68,7 @@
                                                                 <div style="margin-top:8px;">Common causes and fixes:</div>
                                                                 <ol>
                                                                     <li>You're opening the file directly (file://). Run a local server and open via <code>http://&lt;YOUR_IP&gt;:8000</code>.</li>
-                                                                    <li>Network blocked a script — ensure `app.js` and `idb.js` are reachable.</li>
+                                                                    <li>Network blocked a script — ensure <code>app.js</code> and <code>idb.js</code> are reachable.</li>
                                                                     <li>Open Safari on Mac → Develop → &lt;Your iPhone&gt; → page to view Console errors.</li>
                                                                 </ol>
                                                                 <div style="margin-top:8px;font-size:13px">To run a quick server on your Mac:</div>
@@ -82,6 +82,7 @@ python3 -m http.server 8000 --bind 0.0.0.0</pre>
         </script>
         <!-- Lovable badge removed -->
         <script src="idb.js"></script>
+        <script src="ui.js"></script>
         <script src="app.js"></script>
         <script>
             // Register service worker for offline support

@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Preview — Layout Spec</title>
+    <link rel="stylesheet" href="styles.tailwind.css">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+      /* Small preview-only helpers to keep demo concise */
+      .placeholder { height: 120px; display:flex; align-items:center; justify-content:center; color: #666; border: 1px dashed rgba(0,0,0,0.06); }
+    </style>
+  </head>
+  <body>
+    <div id="root">
+      <main class="app">
+        <header class="app-header section">
+          <div>
+            <h1 class="app-title">Wallet Buddy</h1>
+            <div class="app-subtitle">Personal finance, local-first</div>
+          </div>
+          <div style="align-self:center">
+            <button class="primary-button">Add Transaction</button>
+          </div>
+        </header>
+
+        <section class="section">
+          <div class="summary-card card">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:16px;">
+              <div>
+                <div class="summary-label">Current Balance</div>
+                <div class="summary-value">$3,420.50</div>
+                <div class="summary-caption">Updated 2m ago</div>
+              </div>
+              <div style="text-align:right">
+                <div class="summary-label">Budget Remaining</div>
+                <div class="summary-value">$1,120.00</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="section cards-grid">
+          <div class="card">
+            <h3 style="margin:0 0 12px 0; font-size:var(--type-heading); font-weight:600;">Budget Overview</h3>
+            <div class="placeholder">Budget graph placeholder</div>
+          </div>
+
+          <div class="card">
+            <h3 style="margin:0 0 12px 0; font-size:var(--type-heading); font-weight:600;">Spending by Category</h3>
+            <div class="placeholder">Chart placeholder</div>
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="card">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+              <h3 style="margin:0;font-size:var(--type-heading);font-weight:600;">Recent Transactions</h3>
+              <div style="color:hsl(var(--muted));font-size:13px">Showing 6</div>
+            </div>
+
+            <div>
+              <div class="transaction-item" style="display:flex;align-items:center;justify-content:space-between;">
+                <div style="display:flex;gap:12px;align-items:center;">
+                  <div style="width:40px;height:40px;border-radius:8px;background:rgba(0,0,0,0.04);"></div>
+                  <div>
+                    <div class="transaction-merchant">Coffee Shop</div>
+                    <div class="transaction-date">Today • 9:12 AM</div>
+                  </div>
+                </div>
+                <div style="text-align:right">
+                  <div class="transaction-amount">-$4.50</div>
+                  <div class="transaction-meta">Card • Food</div>
+                </div>
+              </div>
+
+              <div class="transaction-item" style="display:flex;align-items:center;justify-content:space-between;">
+                <div style="display:flex;gap:12px;align-items:center;">
+                  <div style="width:40px;height:40px;border-radius:8px;background:rgba(0,0,0,0.04);"></div>
+                  <div>
+                    <div class="transaction-merchant">Salary</div>
+                    <div class="transaction-date">Yesterday</div>
+                  </div>
+                </div>
+                <div style="text-align:right">
+                  <div class="transaction-amount">+$4,000.00</div>
+                  <div class="transaction-meta">Direct Deposit</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="form-card card">
+            <h3 style="margin:0 0 12px 0;font-size:var(--type-heading);font-weight:600;">Quick Add</h3>
+            <div style="display:flex;gap:12px;flex-wrap:wrap;">
+              <input class="field-input" placeholder="Merchant" style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--card-border);" />
+              <input class="field-input" placeholder="Amount" style="width:120px;padding:10px;border-radius:8px;border:1px solid var(--card-border);" />
+              <button class="primary-button">Save</button>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>

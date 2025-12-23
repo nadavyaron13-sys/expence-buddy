@@ -70,8 +70,15 @@
 }
 
 .dark {
-  --background: 222 47% 6%;
-  --foreground: 210 40% 98%;
+  /* Dark-mode tokens tuned to Design.json */
+  --background: 222 47% 6%; /* appBackground: #0B1220 approx */
+  --foreground: 0 0% 100%; /* primary text */
+  --card: 0 0% 6%; /* cardBackground approximated as very dark */
+  --card-foreground: 0 0% 100%;
+  --card-border: rgba(255,255,255,0.06);
+  --muted: 0 0% 72%; /* secondary text ~ rgba(255,255,255,0.72) */
+  --accent: 207 100% 45%;
+  --sidebar-background: 11 7% 8%;
 }
 
 * { box-sizing: border-box; }
@@ -151,30 +158,33 @@ html { font-size: var(--type-body); }
 }
 .budget-button, .currency-button, .save-budget-button { color: hsl(var(--accent)); }
 
-/* Transaction list cards */
-.transaction-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 0;
-  border-bottom: 0.5px solid rgba(0, 0, 0, 0.1);
+/* Transactions: single card container with rows (dark surface hierarchy) */
+.transactions-card {
+  background: #121A2A; /* cardBackground per Design.json */
+  color: #FFFFFF;
+  padding: 12px;
+  border-radius: 16px;
 }
-.transaction-merchant { font-size: 17px; font-weight: 400; }
-.transaction-date, .category-amount, .transaction-meta { color: var(--muted); }
-.transaction-amount { color: var(--accent); }
+.transactions-card-header { padding: 8px 12px; border-bottom: 1px solid rgba(255,255,255,0.03); margin-bottom: 8px; }
+.transactions-card-title { font-weight: 700; font-size: 15px; }
 
-/* Rounded pill chips */
+.transaction-list { list-style:none; padding:0; margin:0; }
+.transaction-item {
+  display:flex; align-items:center; gap:12px; padding:12px; border-radius:8px;
+  background: rgba(255,255,255,0.02); margin-bottom:8px;
+}
+.transaction-merchant { font-size:15px; font-weight:600; color: #e6eef8; }
+.transaction-meta { display:flex; gap:8px; align-items:center; margin-left:auto; text-align:right; }
+.transaction-date { color: rgba(230,238,248,0.72); font-size:12px; }
+.transaction-amount { font-weight:700; font-size:15px; color:#ffffff; margin-left:12px; }
+
+/* Category chip reduced to subtle label with colored dot */
 .transaction-category-chip {
-  display: inline-block;
-  margin-top: 4px;
-  padding: 6px 12px;
-  border-radius: 999px;
-  font-size: 13px;
-  font-weight: 600;
-  color: hsl(var(--foreground));
-  background: linear-gradient(180deg, rgba(255,107,107,0.14), rgba(255,107,107,0.08));
-  border: 1px solid rgba(255,107,107,0.12);
-  box-shadow: 0 6px 14px rgba(16,24,40,0.04);
+  padding:0; margin-left:8px; font-size:12px; color: rgba(230,238,248,0.7); display:flex; align-items:center;
+}
+.transaction-category-chip::before {
+  content: '';
+  width:8px; height:8px; border-radius:999px; margin-right:8px; background: var(--cat-color, #9ca3af); display:inline-block;
 }
 
 /* Chart / donut styling adjustments */
@@ -274,11 +284,14 @@ html { font-size: var(--type-body); }
 .animate-scale-in { animation: scaleIn 0.3s ease-out forwards; }
 
 /* Reference-inspired layout and logo/card utilities */
+/* Centered page container inspired by Stripe/Linear rhythm */
 #root {
+  width: 100%;
   max-width: 1280px;
   margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+  padding: var(--sp-lg) var(--sp-md);
+  box-sizing: border-box;
+  text-align: left;
 }
 
 .logo {
@@ -305,17 +318,47 @@ html { font-size: var(--type-body); }
   }
 }
 
-.card { padding: 2em; }
+
+/* Card defaults: generous padding, subtle radius and consistent shadow */
+.card {
+  padding: var(--sp-md);
+  border-radius: var(--radius);
+  background: var(--card);
+  box-shadow: var(--shadow-card);
+}
 
 /* Normalize card and panel padding to consistent spacing tokens */
 .card, .summary-card, .form-card, .chart-card, .budget-graph-card {
   padding: var(--sp-md);
+  margin-bottom: var(--sp-lg);
 }
 
 /* Ensure consistent vertical rhythm for transaction list items */
 .transaction-item {
   padding-top: var(--sp-sm);
   padding-bottom: var(--sp-sm);
+  gap: var(--sp-sm);
+}
+
+/* Section wrapper for clear sections and generous whitespace */
+.section {
+  margin-top: var(--sp-xl);
+  margin-bottom: var(--sp-xl);
+}
+
+/* Grid for cards when multiple cards present; keeps consistent gutters */
+.cards-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--sp-lg);
+}
+
+@media (min-width: 900px) {
+  .cards-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .app { max-width: 900px; }
+  .card { padding: var(--sp-lg); }
 }
 
 /* Increase tappable target sizes for small controls on mobile */
@@ -698,13 +741,11 @@ button, .primary-button, .back-button {
 
 .chart-card {
   border-radius: 12px;
-  padding: 16px;
-  background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: 0.5px solid rgba(0, 0, 0, 0.08);
+  padding: 20px;
+  background: #0b1220; /* solid dark surface, no gradient */
+  color: #e6eef8;
+  border: 1px solid rgba(255,255,255,0.03);
   margin-top: 20px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
 .chart-title {
@@ -763,29 +804,118 @@ button, .primary-button, .back-button {
 
 .pie-container {
   margin-top: 12px;
-  display: flex;
-  justify-content: center;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  position:relative;
 }
 
 .pie-legend {
   margin-top: 8px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
+  display:flex;
+  flex-wrap:wrap;
+  gap:12px;
 }
 
 .pie-legend-item {
   display: flex;
   align-items: center;
   font-size: 13px;
-  font-weight: 400;
-  color: hsl(var(--muted));
+  font-weight: 500;
+  color: rgba(230,238,248,0.8);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   transition: opacity 0.2s;
   padding: 4px 8px;
   border-radius: 6px;
 }
+
+/* Donut center overlay */
+.donut-center {
+  position:absolute;
+  left:50%; top:50%; transform: translate(-50%,-50%);
+  text-align:center; pointer-events:none;
+}
+.donut-center .donut-label { color: rgba(230,238,248,0.7); font-size:13px; }
+.donut-center .donut-value { font-size:20px; font-weight:800; color:white; margin-top:6px; }
+
+/* SVG donut styling */
+.pie-container svg { overflow: visible; filter: none; }
+.pie-container circle.segment { stroke-linecap: round; }
+
+/* Calendar styles */
+.app { position: relative; }
+
+/* Calendar popup styles */
+.calendar-panel {
+  position: absolute;
+  display: none;
+  right: 20px;
+  top: 88px;
+  width: 360px;
+  background: var(--card-bg, #fff);
+  border: 1px solid rgba(0,0,0,0.06);
+  padding: 12px;
+  border-radius: 12px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.08);
+  z-index: 60;
+}
+.calendar-panel.visible { display: block; }
+.calendar-header {
+  display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:8px;
+}
+.calendar-title { font-weight:600; }
+.cal-nav { background:transparent; border:0; font-size:20px; cursor:pointer; }
+.calendar-grid { display:grid; grid-template-columns: repeat(7, 1fr); gap:6px; }
+.calendar-weekday { text-align:center; font-size:12px; color: hsl(var(--muted)); padding:6px 0; }
+.calendar-day { background: var(--card-bg, #fff); border:1px solid rgba(0,0,0,0.04); padding:8px; min-height:56px; border-radius:8px; cursor:pointer; text-align:left; position:relative; }
+.calendar-day.empty { background:transparent; border:0; cursor:default; }
+.calendar-day .cal-num { font-weight:600; font-size:13px; }
+.calendar-day .cal-count { position:absolute; right:8px; bottom:8px; background:var(--primary, #007aff); color:#fff; font-size:11px; padding:2px 6px; border-radius:999px; }
+.calendar-day.selected { outline: 2px solid rgba(0,122,255,0.12); }
+.calendar-footer { margin-top:8px; display:flex; justify-content:flex-end; }
+.cal-clear { background:transparent; border:0; color: hsl(var(--muted)); cursor:pointer; }
+
+/* Swipe-to-delete styles */
+.transaction-item, .notification-item {
+  position: relative;
+  overflow: hidden;
+  touch-action: pan-y;
+}
+.swipe-content {
+  transition: transform 200ms ease;
+  will-change: transform;
+}
+.swipe-actions {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.swipe-delete {
+  background: hsl(var(--destructive));
+  color: white;
+  border: 0;
+  padding: 6px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+/* Make calendar button more visible and match other controls */
+.calendar-button {
+  background: var(--primary, #007aff);
+  color: white;
+  border: 0;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.calendar-button:hover { opacity: 0.95; }
+.calendar-button:active { transform: translateY(1px); }
 
 .pie-legend-item:active {
   opacity: 0.6;

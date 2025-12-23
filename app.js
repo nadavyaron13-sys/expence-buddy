@@ -26,6 +26,9 @@ let selectedCategory = null;
 let showNotifications = false;
 let showBudgetSettings = false;
 let showCurrencySettings = false;
+let showCalendar = false;
+let selectedDay = null; // YYYY-MM-DD
+let calendarOffset = 0; // months offset from current
 
 const CURRENCIES = {
   USD: { symbol: "$", name: "US Dollar" },
@@ -148,16 +151,16 @@ function saveCurrency(currency) {
 }
 
 const CATEGORY_COLORS = {
-  Food: "#ff6b6b",
-  Transport: "#4ecdc4",
-  Shopping: "#95e1d3",
-  Subscriptions: "#f38181",
-  Travel: "#a8e6cf",
-  Accommodation: "#ffd3a5",
-  Entertainment: "#fd9853",
-  Health: "#a8dadc",
-  Bills: "#ffaaa5",
-  Other: "#9ca3af"
+  Food: "#F59E0B",          // foodDining
+  Transport: "#60A5FA",     // transportation
+  Shopping: "#A855F7",      // shopping
+  Subscriptions: "#EC4899", // entertainment/subscriptions
+  Travel: "#38BDF8",        // travel
+  Accommodation: "#60A5FA",
+  Entertainment: "#EC4899",
+  Health: "#F97316",        // healthFitness
+  Bills: "#22C55E",         // billsUtilities
+  Other: "#9CA3AF"
 };
 
 const CATEGORY_EMOJIS = {
@@ -413,6 +416,15 @@ function formatDate(iso) {
   return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
+function formatDateTime(iso) {
+  try {
+    const d = new Date(iso);
+    return d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  } catch (e) {
+    return iso;
+  }
+}
+
 function computeMonthlyTotal(transactions) {
   const now = new Date();
   const m = now.getMonth();
@@ -435,6 +447,63 @@ function computeCategoryTotals(transactions) {
   return totals;
 }
 
+// Attach pointer-based swipe-to-delete handlers to an element.
+function attachSwipeToDelete(el, onDelete) {
+  // wrap content in swipe-content if not present
+  let content = el.querySelector('.swipe-content');
+  if (!content) {
+    content = document.createElement('div');
+    while (el.firstChild) content.appendChild(el.firstChild);
+    content.className = 'swipe-content';
+    el.appendChild(content);
+  }
+
+  let startX = 0;
+  let currentX = 0;
+  let dragging = false;
+
+  function setTranslate(x) {
+    content.style.transform = `translateX(${x}px)`;
+  }
+
+  el.addEventListener('pointerdown', (e) => {
+    startX = e.clientX;
+    currentX = 0;
+    dragging = true;
+    el.setPointerCapture && el.setPointerCapture(e.pointerId);
+    content.style.transition = 'none';
+  });
+
+  el.addEventListener('pointermove', (e) => {
+    if (!dragging) return;
+    const dx = e.clientX - startX;
+    if (dx < 0) { // only allow left swipe
+      currentX = dx;
+      setTranslate(currentX);
+    }
+  });
+
+  function endDrag(e) {
+    if (!dragging) return;
+    dragging = false;
+    el.releasePointerCapture && el.releasePointerCapture(e.pointerId);
+    content.style.transition = '';
+    if (currentX < -80) {
+      // consider this a delete
+      setTranslate(-200);
+      setTimeout(() => {
+        try { onDelete(); } catch (err) {}
+      }, 180);
+    } else {
+      setTranslate(0);
+    }
+    startX = 0; currentX = 0;
+  }
+
+  el.addEventListener('pointerup', endDrag);
+  el.addEventListener('pointercancel', endDrag);
+}
+
 function renderApp(root, transactions, skipBudgetCheck = false) {
   root.innerHTML = "";
 
@@ -455,9 +524,12 @@ function renderApp(root, transactions, skipBudgetCheck = false) {
   }
 
   const activeCategory = selectedCategory;
-  const listTransactions = activeCategory
+  let listTransactions = activeCategory
     ? transactions.filter((t) => (t.category || "Other") === activeCategory)
-    : transactions;
+    : transactions.slice();
+  if (selectedDay) {
+    listTransactions = listTransactions.filter((t) => (t.timestamp || '').slice(0,10) === selectedDay);
+  }
 
   const app = document.createElement("div");
   app.className = "app";
@@ -485,8 +557,19 @@ function renderApp(root, transactions, skipBudgetCheck = false) {
   } else {
     const headerLeft = document.createElement("div");
     headerLeft.innerHTML = `
-      <div class="app-title">Finance</div>
-      <div class="app-subtitle">Local-only personal dashboard</div>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div class="app-logo" aria-hidden="true"> 
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="1" y="4" width="22" height="14" rx="2" stroke="currentColor" stroke-width="1.2" fill="none" />
+            <path d="M3 8h18" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
+            <circle cx="18" cy="11" r="1.6" fill="currentColor" />
+          </svg>
+        </div>
+        <div>
+          <div class="app-title">Wallet Buddy</div>
+          <div class="app-subtitle">Local-only personal dashboard</div>
+        </div>
+      </div>
     `;
     header.appendChild(headerLeft);
     header.appendChild(notificationButton);
@@ -509,8 +592,6 @@ function renderApp(root, transactions, skipBudgetCheck = false) {
   const categorySpending = computeCategoryTotals(monthlyTransactions);
 
   // Summary
-  const summaryCard = document.createElement("div");
-  summaryCard.className = "summary-card";
   const total = computeMonthlyTotal(listTransactions);
   let budgetStatusHtml = "";
   if (overallBudget > 0 && !activeCategory) {
@@ -527,7 +608,7 @@ function renderApp(root, transactions, skipBudgetCheck = false) {
       </div>
     `;
   }
-  summaryCard.innerHTML = `
+  const summaryHtml = `
     <div class="summary-label">${activeCategory ? "This month in category" : "This month"}</div>
     <div class="summary-value">${formatCurrency(total, currentCurrency)}</div>
     <div class="summary-caption">
@@ -535,11 +616,11 @@ function renderApp(root, transactions, skipBudgetCheck = false) {
     </div>
     ${budgetStatusHtml}
   `;
+  const summaryCard = ui.Card(summaryHtml);
+  summaryCard.classList.add('summary-card');
 
   // Form
-  const formCard = document.createElement("div");
-  formCard.className = "form-card";
-  formCard.innerHTML = `
+  const formHtml = `
     <div class="form-row">
       <div class="field">
         <div class="field-label">Amount (${currentCurrency})</div>
@@ -569,6 +650,8 @@ function renderApp(root, transactions, skipBudgetCheck = false) {
       <button id="add-button" class="primary-button">Add</button>
     </div>
   `;
+  const formCard = ui.Card(formHtml);
+  formCard.classList.add('form-card');
 
   const listTitle = document.createElement("div");
   listTitle.className = "transactions-section-title";
@@ -595,7 +678,7 @@ function renderApp(root, transactions, skipBudgetCheck = false) {
       meta.className = "transaction-meta";
       meta.innerHTML = `
         <div class="transaction-amount">${formatCurrency(t.amount, currentCurrency)}</div>
-        <div class="transaction-date">${formatDate(t.timestamp)}</div>
+        <div class="transaction-date">${formatDateTime(t.timestamp)}</div>
       `;
 
       const del = document.createElement("button");
@@ -613,10 +696,18 @@ function renderApp(root, transactions, skipBudgetCheck = false) {
       li.appendChild(meta);
       ul.appendChild(li);
 
+      // Attach swipe-to-delete for transactions
+      attachSwipeToDelete(li, () => {
+        const updated = transactions.filter((x) => x.id !== t.id);
+        saveTransactions(updated);
+        renderApp(root, updated);
+      });
+
       const chip = li.querySelector(".transaction-category-chip");
       if (chip) {
         const cat = t.category || "Other";
-        chip.style.backgroundColor = CATEGORY_COLORS[cat] || CATEGORY_COLORS.Other;
+        const color = CATEGORY_COLORS[cat] || CATEGORY_COLORS.Other;
+        chip.style.setProperty('--cat-color', color);
         chip.style.cursor = "pointer";
         chip.addEventListener("click", () => {
           selectedCategory = cat;
@@ -626,12 +717,12 @@ function renderApp(root, transactions, skipBudgetCheck = false) {
     });
 
   // Category chart
-  const chartCard = document.createElement("div");
-  chartCard.className = "chart-card";
   const chartTitle = document.createElement("div");
   chartTitle.className = "chart-title";
   chartTitle.textContent = "Spending by category";
   const chartContainer = document.createElement("div");
+  const chartCard = ui.Card([chartTitle, chartContainer]);
+  chartCard.classList.add('chart-card');
 
   const totals = computeCategoryTotals(transactions);
   const entries = Object.entries(totals);
@@ -676,47 +767,66 @@ function renderApp(root, transactions, skipBudgetCheck = false) {
     });
   }
 
+  // Layout: title + grid (bars left, pie right) + legend
   chartCard.appendChild(chartTitle);
-  chartCard.appendChild(chartContainer);
+  const chartGrid = document.createElement('div');
+  chartGrid.style.display = 'flex';
+  chartGrid.style.alignItems = 'flex-start';
+  chartGrid.style.gap = '18px';
+  chartGrid.appendChild(chartContainer);
+  chartContainer.style.flex = '1';
 
-  // Pie chart
+  // Donut chart (stroke-based segments) with center label
   const pieWrapper = document.createElement("div");
   pieWrapper.className = "pie-container";
   const pieSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-  pieSvg.setAttribute("width", "160");
-  pieSvg.setAttribute("height", "160");
+  pieSvg.setAttribute("width", "220");
+  pieSvg.setAttribute("height", "220");
   pieSvg.setAttribute("viewBox", "0 0 32 32");
 
   if (entries.length > 0) {
     const totalSum = entries.reduce((sum, [, v]) => sum + v, 0);
-    let currentAngle = 0;
+    const radius = 12; // in viewBox units
+    const circumference = 2 * Math.PI * radius;
+    // Safer stroke width & gap to create a large inner hole (~70% inner radius)
+    const strokeWidth = 4.5; // thinner ring for larger inner hole
+    const gap = Math.max(1, circumference * 0.04); // increased gap for visible separation
+    let cumulative = 0;
 
     entries.forEach(([category, value]) => {
-      const sliceAngle = (value / totalSum) * Math.PI * 2;
-      const x1 = 16 + 16 * Math.cos(currentAngle);
-      const y1 = 16 + 16 * Math.sin(currentAngle);
-      const x2 = 16 + 16 * Math.cos(currentAngle + sliceAngle);
-      const y2 = 16 + 16 * Math.sin(currentAngle + sliceAngle);
-      const largeArcFlag = sliceAngle > Math.PI ? 1 : 0;
+      const fraction = value / totalSum;
+      let dash = Math.max((fraction * circumference) - gap, 0.0001);
+      const color = CATEGORY_COLORS[category] || CATEGORY_COLORS.Other;
 
-      const pathData = [
-        `M 16 16`,
-        `L ${x1} ${y1}`,
-        `A 16 16 0 ${largeArcFlag} 1 ${x2} ${y2}`,
-        `Z`
-      ].join(" ");
+      const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      circle.setAttribute('cx', '16');
+      circle.setAttribute('cy', '16');
+      circle.setAttribute('r', String(radius));
+      circle.setAttribute('fill', 'none');
+      circle.setAttribute('class', 'segment');
+      circle.setAttribute('stroke', color);
+      circle.setAttribute('stroke-width', String(strokeWidth));
+      circle.setAttribute('stroke-dasharray', `${dash} ${circumference}`);
+      circle.setAttribute('stroke-dashoffset', String(-cumulative));
+      circle.setAttribute('stroke-linecap', 'round');
+      circle.setAttribute('transform', 'rotate(-90 16 16)');
+      pieSvg.appendChild(circle);
 
-      const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-      path.setAttribute("d", pathData);
-      path.setAttribute("fill", CATEGORY_COLORS[category] || CATEGORY_COLORS.Other);
-      pieSvg.appendChild(path);
-
-      currentAngle += sliceAngle;
+      cumulative += dash + gap;
     });
+
+    // center overlay
+    const totalLabel = document.createElement('div');
+    totalLabel.className = 'donut-center';
+    const currSym = (CURRENCIES[currentCurrency] || CURRENCIES.USD).symbol;
+    const totalText = `${currSym}${totalSum.toFixed(2)}`;
+    totalLabel.innerHTML = `<div class="donut-label">Total</div><div class="donut-value">${totalText}</div>`;
+    pieWrapper.appendChild(totalLabel);
   }
 
   pieWrapper.appendChild(pieSvg);
-  chartCard.appendChild(pieWrapper);
+  chartGrid.appendChild(pieWrapper);
+  chartCard.appendChild(chartGrid);
 
   // Legend
   const legend = document.createElement("div");
@@ -737,8 +847,8 @@ function renderApp(root, transactions, skipBudgetCheck = false) {
   chartCard.appendChild(legend);
 
   // Budget graph card for home screen
-  const budgetGraphCard = document.createElement("div");
-  budgetGraphCard.className = "budget-graph-card";
+  const budgetGraphCard = ui.Card('');
+  budgetGraphCard.classList.add('budget-graph-card');
   if (!activeCategory && (overallBudget > 0 || Object.keys(budgetsData).some((k) => k !== "overall" && budgetsData[k] > 0))) {
     const budgetGraphHtml = buildBudgetGraph(budgetsData, categorySpending, overallBudget, Math.abs(monthlySpending), currentCurrency);
     budgetGraphCard.innerHTML = `
@@ -748,23 +858,24 @@ function renderApp(root, transactions, skipBudgetCheck = false) {
   }
 
   // Budget settings button
-  const budgetButton = document.createElement("button");
-  budgetButton.className = "budget-button";
   const curr = CURRENCIES[currentCurrency] || CURRENCIES.USD;
-  budgetButton.textContent = overallBudget > 0 ? `Budget: ${curr.symbol}${overallBudget.toFixed(2)}` : "Set Budget";
-  budgetButton.addEventListener("click", () => {
-    showBudgetSettings = !showBudgetSettings;
-    renderApp(root, transactions);
+  const budgetButton = ui.Button(overallBudget > 0 ? `Budget: ${curr.symbol}${overallBudget.toFixed(2)}` : "Set Budget", {
+    onClick: () => {
+      showBudgetSettings = !showBudgetSettings;
+      renderApp(root, transactions);
+    }
   });
+  budgetButton.classList.add('budget-button');
 
   // Currency button
-  const currencyButton = document.createElement("button");
-  currencyButton.className = "currency-button";
-  currencyButton.textContent = currentCurrency;
-  currencyButton.addEventListener("click", () => {
-    showCurrencySettings = !showCurrencySettings;
-    renderApp(root, transactions);
+  const currencyButton = ui.Button(currentCurrency, {
+    onClick: () => {
+      showCurrencySettings = !showCurrencySettings;
+      renderApp(root, transactions);
+    },
+    variant: 'ghost'
   });
+  currencyButton.classList.add('currency-button');
 
   // Notification center
   const notificationCenter = document.createElement("div");
@@ -797,6 +908,12 @@ function renderApp(root, transactions, skipBudgetCheck = false) {
         renderApp(root, transactions, true); // Skip budget check to prevent re-adding notifications
       });
       notificationList.appendChild(notifItem);
+      // Attach swipe-to-delete for notifications
+      attachSwipeToDelete(notifItem, () => {
+        const updated = allNotifications.filter((n) => n.id !== notif.id);
+        saveNotifications(updated);
+        renderApp(root, transactions, true);
+      });
     });
   }
   notificationCenter.appendChild(notificationHeader);
@@ -836,21 +953,57 @@ function renderApp(root, transactions, skipBudgetCheck = false) {
     </div>
   `;
 
-  app.appendChild(header);
-  app.appendChild(summaryCard);
+  // Compose sections to match approved visual spec
+  const headerSection = document.createElement('div');
+  headerSection.className = 'section';
+  headerSection.appendChild(header);
+
+  const summarySection = document.createElement('div');
+  summarySection.className = 'section';
+  summarySection.appendChild(summaryCard);
+
+  app.appendChild(headerSection);
+  app.appendChild(summarySection);
+
   if (!activeCategory) {
+    // Cards grid: budget + charts
+    const cardsSection = document.createElement('div');
+    cardsSection.className = 'section cards-grid';
     if (budgetGraphCard.innerHTML.trim()) {
-      app.appendChild(budgetGraphCard);
+      cardsSection.appendChild(budgetGraphCard);
     }
-    app.appendChild(budgetButton);
-    app.appendChild(currencyButton);
+    cardsSection.appendChild(chartCard);
+    app.appendChild(cardsSection);
+
+    const controlsSection = document.createElement('div');
+    controlsSection.className = 'section';
+    // Calendar toggle button
+    const calendarButton = ui.Button('Calendar', {
+      onClick: () => { showCalendar = !showCalendar; renderApp(root, transactions); }
+    });
+    calendarButton.classList.add('calendar-button');
+    controlsSection.appendChild(calendarButton);
+    controlsSection.appendChild(budgetButton);
+    controlsSection.appendChild(currencyButton);
+    app.appendChild(controlsSection);
   }
-  app.appendChild(formCard);
-  app.appendChild(listTitle);
-  app.appendChild(ul);
-  if (!activeCategory) {
-    app.appendChild(chartCard);
-  }
+
+  const transactionsSection = document.createElement('div');
+  transactionsSection.className = 'section';
+  transactionsSection.appendChild(formCard);
+
+  // Single card container for recent transactions
+  const transactionsCard = ui.Card('');
+  transactionsCard.classList.add('transactions-card');
+  const tcHeader = document.createElement('div');
+  tcHeader.className = 'transactions-card-header';
+  tcHeader.innerHTML = `<div class="transactions-card-title">${activeCategory ? `History: ${getCategoryDisplay(activeCategory)}` : 'Recent activity'}</div>`;
+  transactionsCard.appendChild(tcHeader);
+  // append the list into the card
+  transactionsCard.appendChild(ul);
+
+  transactionsSection.appendChild(transactionsCard);
+  app.appendChild(transactionsSection);
   // Currency settings panel
   const currencyPanel = document.createElement("div");
   currencyPanel.className = `budget-panel currency-panel ${showCurrencySettings ? "visible" : ""}`;
@@ -880,6 +1033,89 @@ function renderApp(root, transactions, skipBudgetCheck = false) {
   app.appendChild(notificationCenter);
   app.appendChild(budgetPanel);
   app.appendChild(currencyPanel);
+
+  // Calendar panel
+  const transactionsByDate = {};
+  transactions.forEach((t) => {
+    const d = (t.timestamp || '').slice(0,10);
+    if (!d) return;
+    transactionsByDate[d] = transactionsByDate[d] || [];
+    transactionsByDate[d].push(t);
+  });
+
+  const calendarPanel = document.createElement('div');
+  calendarPanel.className = `calendar-panel ${showCalendar ? 'visible' : ''}`;
+
+  const calNow = new Date();
+  const displayed = new Date(calNow.getFullYear(), calNow.getMonth() + calendarOffset, 1);
+  const monthName = displayed.toLocaleString(undefined, { month: 'long', year: 'numeric' });
+
+  const calHeader = document.createElement('div');
+  calHeader.className = 'calendar-header';
+  calHeader.innerHTML = `
+    <button id="cal-prev" class="cal-nav">‹</button>
+    <div class="calendar-title">${monthName}</div>
+    <button id="cal-next" class="cal-nav">›</button>
+  `;
+
+  const calGrid = document.createElement('div');
+  calGrid.className = 'calendar-grid';
+
+  // Weekday labels
+  ['Su','Mo','Tu','We','Th','Fr','Sa'].forEach((w) => {
+    const el = document.createElement('div'); el.className = 'calendar-weekday'; el.textContent = w; calGrid.appendChild(el);
+  });
+
+  const firstDay = new Date(displayed.getFullYear(), displayed.getMonth(), 1).getDay();
+  const daysInMonth = new Date(displayed.getFullYear(), displayed.getMonth()+1, 0).getDate();
+
+  // blank cells
+  for (let i=0;i<firstDay;i++) {
+    const empty = document.createElement('div'); empty.className = 'calendar-day empty'; calGrid.appendChild(empty);
+  }
+
+  for (let d=1; d<=daysInMonth; d++) {
+    const dateStr = new Date(displayed.getFullYear(), displayed.getMonth(), d).toISOString().slice(0,10);
+    const day = document.createElement('button');
+    day.className = 'calendar-day';
+    if (selectedDay === dateStr) day.classList.add('selected');
+    const badge = transactionsByDate[dateStr] ? `<span class="cal-count">${transactionsByDate[dateStr].length}</span>` : '';
+    day.innerHTML = `<div class="cal-num">${d}</div>${badge}`;
+    day.addEventListener('click', () => {
+      selectedDay = dateStr === selectedDay ? null : dateStr;
+      renderApp(root, transactions);
+    });
+    calGrid.appendChild(day);
+  }
+
+  const calFooter = document.createElement('div');
+  calFooter.className = 'calendar-footer';
+  const clearBtn = document.createElement('button'); clearBtn.textContent = 'Clear date'; clearBtn.className = 'cal-clear';
+  clearBtn.addEventListener('click', () => { selectedDay = null; showCalendar = false; renderApp(root, transactions); });
+  calFooter.appendChild(clearBtn);
+
+  calendarPanel.appendChild(calHeader);
+  calendarPanel.appendChild(calGrid);
+  calendarPanel.appendChild(calFooter);
+
+  app.appendChild(calendarPanel);
+
+  // If calendar should pop up, position it next to the calendar button
+  if (showCalendar) {
+    // find the calendar button rendered in controls
+    const calBtnEl = app.querySelector('.calendar-button');
+    if (calBtnEl) {
+      try {
+        const btnRect = calBtnEl.getBoundingClientRect();
+        const appRect = app.getBoundingClientRect();
+        // position relative to app container
+        calendarPanel.style.left = Math.max(8, (btnRect.left - appRect.left)) + 'px';
+        calendarPanel.style.top = (btnRect.bottom - appRect.top + 8) + 'px';
+      } catch (e) {
+        // fallback: leave default CSS positioning
+      }
+    }
+  }
 
   root.appendChild(app);
 
@@ -928,6 +1164,22 @@ function renderApp(root, transactions, skipBudgetCheck = false) {
   if (closeCurrency) {
     closeCurrency.addEventListener("click", () => {
       showCurrencySettings = false;
+      renderApp(root, transactions);
+    });
+  }
+
+  // Calendar prev/next navigation
+  const calPrev = document.getElementById('cal-prev');
+  const calNext = document.getElementById('cal-next');
+  if (calPrev) {
+    calPrev.addEventListener('click', () => {
+      calendarOffset -= 1;
+      renderApp(root, transactions);
+    });
+  }
+  if (calNext) {
+    calNext.addEventListener('click', () => {
+      calendarOffset += 1;
       renderApp(root, transactions);
     });
   }

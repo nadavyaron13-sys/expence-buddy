@@ -1,0 +1,12 @@
+{
+  "name": "Finance Dashboard",
+  "short_name": "Finance",
+  "description": "Local-only personal finance tracking dashboard",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f2f2f7",
+  "theme_color": "#007aff",
+  "orientation": "portrait",
+  "icons": []
+}
+
